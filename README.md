@@ -47,6 +47,8 @@ printf "15 7 1 1 + - /\n3 * 2 1 1 + + -\n" | pol
 | `clear` | Clear the stack |
 | `pop` | Remove the top element |
 | `undo` | Revert the last operation |
+| `help` `?` | Show this help text |
+| `swap` | Swap the top two stack elements |
 | `r`, `r2`, `r-`, `r-2` | Rotate the stack left/right by N positions (default 1) |
 | `mode` | Show current display mode |
 | `mode horizontal` | Switch to horizontal display (default, top-first: `[3 2 1]`) |

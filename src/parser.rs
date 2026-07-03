@@ -16,6 +16,7 @@ pub enum Cmd {
     Help,
     Pop,
     Quit,
+    Swap,
     Undo,
     Rotate(i32),
     Sqrt,
@@ -42,7 +43,8 @@ pub fn parse_line(input: &str) -> Vec<Result<Token, CalcError>> {
             "%" => Ok(Token::Operator(Op::Mod)),
             "sqrt" => Ok(Token::Command(Cmd::Sqrt)),
             "clear" => Ok(Token::Command(Cmd::Clear)),
-            "help" => Ok(Token::Command(Cmd::Help)),
+            "help" | "?" => Ok(Token::Command(Cmd::Help)),
+            "swap" => Ok(Token::Command(Cmd::Swap)),
             "pop" => Ok(Token::Command(Cmd::Pop)),
             "quit" => Ok(Token::Command(Cmd::Quit)),
             "undo" => Ok(Token::Command(Cmd::Undo)),
@@ -273,6 +275,16 @@ mod tests {
     #[test]
     fn parse_help() {
         assert_eq!(parse_ok("help"), vec![Token::Command(Cmd::Help)]);
+    }
+
+    #[test]
+    fn parse_help_question_mark() {
+        assert_eq!(parse_ok("?"), vec![Token::Command(Cmd::Help)]);
+    }
+
+    #[test]
+    fn parse_swap() {
+        assert_eq!(parse_ok("swap"), vec![Token::Command(Cmd::Swap)]);
     }
 
     #[test]

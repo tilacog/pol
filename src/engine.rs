@@ -23,6 +23,7 @@ Commands:
     pop         Remove the top element
     quit        Exit the calculator
     undo        Undo the last operation
+    swap         Swap the top two stack elements
     r, r<N>     Rotate stack left by N (default 1)
     r-, r-<N>   Rotate stack right by N (default 1)
     sqrt        Square root of the top element
@@ -118,6 +119,26 @@ impl Calculator {
         }
     }
 
+    /// Swaps the top two elements on the stack.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CalcError::StackUnderflow`] if fewer than two elements are on
+    /// the stack.
+    pub fn swap(&mut self) -> Result<(), CalcError> {
+        if self.stack.len() < 2 {
+            return Err(CalcError::StackUnderflow {
+                operator: "swap".to_string(),
+                required: 2,
+                available: self.stack.len(),
+            });
+        }
+        self.save_snapshot();
+        let len = self.stack.len();
+        self.stack.swap(len - 1, len - 2);
+        Ok(())
+    }
+
     /// Replaces the top element with its square root.
     ///
     /// # Errors
@@ -207,6 +228,7 @@ impl Calculator {
             Token::Command(Cmd::Quit) => return Ok(true),
             Token::Command(Cmd::Undo) => self.undo()?,
             Token::Command(Cmd::Rotate(n)) => self.rotate(n),
+            Token::Command(Cmd::Swap) => self.swap()?,
             Token::Command(Cmd::Sqrt) => self.sqrt()?,
         }
         Ok(false)
@@ -767,6 +789,80 @@ mod tests {
         assert_eq!(calc.stack(), &[4.0]);
         calc.undo().unwrap();
         assert_eq!(calc.stack(), &[16.0]);
+    }
+
+    #[test]
+    fn swap_basic() {
+        let mut calc = Calculator::new();
+        calc.push(1.0);
+        calc.push(2.0);
+        calc.swap().unwrap();
+        assert_eq!(calc.stack(), &[2.0, 1.0]);
+    }
+
+    #[test]
+    fn swap_preserves_rest_of_stack() {
+        let mut calc = Calculator::new();
+        calc.push(10.0);
+        calc.push(20.0);
+        calc.push(30.0);
+        calc.swap().unwrap();
+        assert_eq!(calc.stack(), &[10.0, 30.0, 20.0]);
+    }
+
+    #[test]
+    fn swap_underflow_empty() {
+        let mut calc = Calculator::new();
+        let err = calc.swap().unwrap_err();
+        assert_eq!(
+            err,
+            CalcError::StackUnderflow {
+                operator: "swap".to_string(),
+                required: 2,
+                available: 0,
+            }
+        );
+    }
+
+    #[test]
+    fn swap_underflow_one_element() {
+        let mut calc = Calculator::new();
+        calc.push(5.0);
+        let err = calc.swap().unwrap_err();
+        assert_eq!(
+            err,
+            CalcError::StackUnderflow {
+                operator: "swap".to_string(),
+                required: 2,
+                available: 1,
+            }
+        );
+    }
+
+    #[test]
+    fn swap_undo() {
+        let mut calc = Calculator::new();
+        calc.push(1.0);
+        calc.push(2.0);
+        calc.swap().unwrap();
+        assert_eq!(calc.stack(), &[2.0, 1.0]);
+        calc.undo().unwrap();
+        assert_eq!(calc.stack(), &[1.0, 2.0]);
+    }
+
+    #[test]
+    fn swap_in_expression() {
+        let mut calc = Calculator::new();
+        calc.process_line("3 4 swap").unwrap();
+        assert_eq!(calc.stack(), &[4.0, 3.0]);
+    }
+
+    #[test]
+    fn swap_then_operator() {
+        let mut calc = Calculator::new();
+        calc.process_line("3 4 swap -").unwrap();
+        // [3, 4] → swap → [4, 3] → sub → 1
+        assert_eq!(calc.stack(), &[1.0]);
     }
 
     #[test]
